@@ -3,72 +3,436 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reddit Vibe Analyzer</title>
+  <title>Reddit Sentiment Game & Analyzer</title>
 
   <!-- Bootstrap CSS -->
-  <link 
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
-    rel="stylesheet" 
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
   />
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
 
   <style>
     body { background-color: #f8f9fa; }
-    #chartContainer { display: none; }
-    #results { display: none; }
     textarea { resize: vertical; }
   </style>
 
-  <!-- Load scripts in proper order -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="data.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-  <script src="app.js" defer></script>
+  <!-- Script order matters -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="data.js"></script>
+  <script type="module" src="js/app.js"></script>
 </head>
 
 <body>
   <!-- HEADER -->
   <nav class="navbar navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-      <span class="navbar-brand mb-0 h1">📊 Reddit Vibe Analyzer</span>
+      <span class="navbar-brand mb-0 h1">🎮 Reddit Sentiment Game & Analyzer</span>
+      <button id="themeToggle" class="btn btn-outline-light btn-sm">
+        <span id="themeIcon">🌙</span>
+      </button>
     </div>
   </nav>
 
-  <!-- MAIN CONTAINER -->
   <div class="container">
-    <!-- Input Section -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title">Paste Reddit Post Text or Comments</h5>
-        <p class="text-muted small mb-2">
-          (Using mock data for now — we can integrate Reddit later.)
-        </p>
-        <textarea 
-          id="inputText" 
-          class="form-control mb-3" 
-          rows="5" 
-          placeholder="Paste your text here..."
-        ></textarea>
-        <button id="analyzeBtn" class="btn btn-primary w-100">
-          Analyze Vibe
+
+    <!-- STATUS ALERT -->
+    <div id="statusAlert" class="alert alert-warning d-flex align-items-center" role="alert" style="display: none;">
+      <div id="statusText">Status…</div>
+    </div>
+
+    <!-- TAB NAVIGATION -->
+    <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="game-tab" data-bs-toggle="tab" data-bs-target="#gameTab" type="button">
+          🎮 Sentiment Invaders Game
         </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysisTab" type="button">
+          📊 Subreddit Analysis
+        </button>
+      </li>
+    </ul>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content">
+      
+      <!-- TAB 1: GAME (DEFAULT) -->
+      <div class="tab-pane fade show active" id="gameTab">
+        
+        <!-- GAME: Subreddit Input (SINGLE ONLY) -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title">Analyze a Live Subreddit</h5>
+            <p class="text-muted small mb-3">Fetch posts and play the game with real Reddit data.</p>
+
+            <form class="row g-2" onsubmit="return false">
+              <div class="col-12 col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text">r/</span>
+                  <input
+                    id="gameSubredditInput"
+                    type="text"
+                    class="form-control"
+                    placeholder="worldnews"
+                    autocomplete="off"
+                  />
+                </div>
+                <small class="text-muted">Single subreddit only for game</small>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="gameSortSelect" class="form-select">
+                  <option value="hot" selected>Hot</option>
+                  <option value="new">New</option>
+                  <option value="top">Top</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2" id="gameTopTimeCol" style="display:none">
+                <select id="gameTopTimeSelect" class="form-select">
+                  <option value="hour">Past Hour</option>
+                  <option value="day" selected>Past Day</option>
+                  <option value="week">Past Week</option>
+                  <option value="month">Past Month</option>
+                  <option value="year">Past Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="gameLimitSelect" class="form-select">
+                  <option value="50">50</option>
+                  <option value="100" selected>100</option>
+                  <option value="250">250</option>
+                  <option value="500">500</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-2 d-grid">
+                <button id="gameFetchBtn" class="btn btn-primary" type="button">
+                  Load Game Data
+                </button>
+              </div>
+            </form>
+
+            <div class="form-text mt-2">
+              Examples: <code>worldnews</code>, <code>AskReddit</code>, <code>javascript</code>
+              <ul class="mt-2 mb-0 small text-muted" style="list-style: none; padding-left: 0;">
+                <li><strong>Hot</strong> – Most popular posts right now</li>
+                <li><strong>New</strong> – Most recently posted</li>
+                <li><strong>Top</strong> – Highest upvoted over time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- GAME: Manual Text -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title">Or Paste Custom Text</h5>
+            <p class="text-muted small mb-2">Paste any text to create enemies from it.</p>
+            <textarea
+              id="gameInputText"
+              class="form-control mb-3"
+              rows="5"
+              placeholder="Paste your text here..."
+            ></textarea>
+            <button id="gameAnalyzeBtn" class="btn btn-primary w-100" type="button">
+              Load Game from Text
+            </button>
+          </div>
+        </div>
+
+        <!-- GAME: Current Subreddit Display -->
+        <div id="gameSubredditDisplay" class="alert alert-success text-center mb-3" style="display: none;">
+          <strong>Playing:</strong> <span id="gameSubredditName"></span>
+        </div>
+
+        <!-- GAME: Enemy Preview -->
+        <div id="gameEnemyPreview" class="mb-3" style="display: none;">
+          <div class="alert alert-info text-center" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">
+            <strong id="gameEnemyPreviewText">Ready to face enemies...</strong>
+          </div>
+        </div>
+
+        <!-- GAME SECTION -->
+        <div class="card">
+          <div class="card-body">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">🎮 Sentiment Invaders</h5>
+              <button id="playGameBtn" class="btn btn-success btn-lg" disabled>Play Game</button>
+            </div>
+            
+            <div id="keyboardInstructions" class="alert alert-info mb-3" style="display: none;">
+              <strong>Controls:</strong> ⬅️➡️ Arrow keys | Spacebar to shoot | P to pause
+            </div>
+            
+            <div class="text-center position-relative">
+              <canvas id="gameCanvas" width="800" height="600" tabindex="0"></canvas>
+            </div>
+            
+            <div id="touchControls" class="d-flex justify-content-center gap-3 my-3" style="display: none;">
+              <button id="moveLeftBtn" class="btn btn-lg btn-primary">◀️</button>
+              <button id="shootBtn" class="btn btn-lg btn-danger">🔫</button>
+              <button id="moveRightBtn" class="btn btn-lg btn-primary">▶️</button>
+            </div>
+            
+            <div id="gameStats" class="text-center mb-3">
+              <span class="badge bg-info me-2">Time: <span id="gameTime">0:00</span></span>
+              <span class="badge bg-primary me-2">Score: <span id="gameScore">0</span></span>
+              <span class="badge bg-danger me-2">Health: <span id="gameHealth">100</span></span>
+            </div>
+            
+            <div id="killProgress" class="text-center mb-3">
+              <span class="badge me-2" style="background-color: #dc3545; color: white; font-size: 0.9rem;">💀 Neg: 0/5</span>
+              <span class="badge me-2" style="background-color: #28a745; color: white; font-size: 0.9rem;">💚 Pos: 0/5</span>
+              <span class="badge" style="background-color: #6c757d; color: white; font-size: 0.9rem;">😐 Neu: 0/5</span>
+            </div>
+            
+            <div class="text-center mb-3">
+              <label class="small me-2" style="font-weight: 600;">Difficulty:</label>
+              <div class="btn-group btn-group-sm">
+                <input type="radio" class="btn-check" name="difficulty" id="diffEasy" value="easy">
+                <label class="btn btn-success" for="diffEasy" style="font-weight: 600;">Easy</label>
+                
+                <input type="radio" class="btn-check" name="difficulty" id="diffNormal" value="normal" checked>
+                <label class="btn btn-warning" for="diffNormal" style="font-weight: 600;">Normal</label>
+                
+                <input type="radio" class="btn-check" name="difficulty" id="diffHard" value="hard">
+                <label class="btn btn-danger" for="diffHard" style="font-weight: 600;">Hard</label>
+              </div>
+            </div>
+            
+            <div class="text-center">
+              <button id="pauseGameBtn" class="btn btn-warning btn-sm me-2" style="display: none;">⏸️ Pause</button>
+              <button id="restartGameBtn" class="btn btn-secondary btn-sm" disabled>🔄 Restart</button>
+            </div>
+            
+          </div>
+        </div>
+
+        <!-- SOURCE TABLE SECTION (Collapsible) -->
+        <div id="sourceTableSection" class="card mt-4" style="display: none;">
+          <div class="card-header">
+            <button 
+              class="btn btn-link text-decoration-none w-100 text-start p-0" 
+              type="button" 
+              data-bs-toggle="collapse" 
+              data-bs-target="#sourceTableCollapse" 
+              aria-expanded="false" 
+              aria-controls="sourceTableCollapse"
+              id="sourceTableToggle"
+            >
+              <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                <span>
+                  📊 Comment Sources (<span id="sourceTableCount">0</span> comments)
+                </span>
+                <span class="badge bg-secondary" id="sourceTableBadge">Click to expand ▼</span>
+              </h5>
+            </button>
+          </div>
+          
+          <div class="collapse" id="sourceTableCollapse">
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                Each enemy in the game has a citation number [#] that corresponds to a comment from the source below. 
+                Click "View Thread" to see the original Reddit post.
+              </p>
+              
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-center" style="width: 60px;">#</th>
+                      <th style="width: 40%;">Comment Preview</th>
+                      <th class="text-center" style="width: 100px;">Sentiment</th>
+                      <th style="width: 120px;">Subreddit</th>
+                      <th class="text-center" style="width: 120px;">Post</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sourceTableBody">
+                    <!-- Populated by app.js buildSourceTable() -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
       </div>
+
+      <!-- TAB 2: ANALYSIS -->
+      <div class="tab-pane fade" id="analysisTab">
+        
+        <!-- ANALYSIS: Subreddit Input (1-5) -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title">Analyze a Live Subreddit</h5>
+            <p class="text-muted small mb-3">Fetch posts and analyze their overall vibe.</p>
+
+            <form class="row g-2" onsubmit="return false">
+              <div class="col-12 col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text">r/</span>
+                  <input
+                    id="subredditInput"
+                    type="text"
+                    class="form-control"
+                    placeholder="AskReddit, worldnews"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="sortSelect" class="form-select">
+                  <option value="hot" selected>Hot</option>
+                  <option value="new">New</option>
+                  <option value="top">Top</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2" id="topTimeCol" style="display:none">
+                <select id="topTimeSelect" class="form-select">
+                  <option value="hour">Past Hour</option>
+                  <option value="day" selected>Past Day</option>
+                  <option value="week">Past Week</option>
+                  <option value="month">Past Month</option>
+                  <option value="year">Past Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="limitSelect" class="form-select">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100" selected>100</option>
+                  <option value="250">250</option>
+                  <option value="500">500</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-2 d-grid">
+                <button id="fetchBtn" class="btn btn-outline-primary" type="button">
+                  Analyze
+                </button>
+              </div>
+            </form>
+
+            <div class="form-text mt-2">
+              Examples: <code>AskReddit</code>, <code>worldnews</code> – Use commas to compare (<strong>max 5</strong>)
+              <ul class="mt-2 mb-0 small text-muted" style="list-style: none; padding-left: 0;">
+                <li><strong>Hot</strong> – Most popular posts right now</li>
+                <li><strong>New</strong> – Most recently posted</li>
+                <li><strong>Top</strong> – Highest upvoted over time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYSIS: Manual Text -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title">Paste Reddit Post Text or Comments</h5>
+            <p class="text-muted small mb-2">Paste any text for sentiment analysis.</p>
+            <textarea
+              id="inputText"
+              class="form-control mb-3"
+              rows="5"
+              placeholder="Paste your text here..."
+            ></textarea>
+            <button id="analyzeBtn" class="btn btn-primary w-100" type="button">
+              Analyze Vibe
+            </button>
+          </div>
+        </div>
+
+        <!-- ANALYSIS: Results -->
+        <div id="results" class="card mb-4" style="display: none;">
+          <div class="card-body">
+            <h5 class="card-title mb-2">Vibe Score</h5>
+            <p class="lead mb-0" id="scoreText"></p>
+            <small class="text-muted d-block mt-1">
+              <strong>How it's graded:</strong> 
+              Positive words increase score, negative decrease it.
+            </small>
+          </div>
+        </div>
+
+        <!-- ANALYSIS: Visualization -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="card-title mb-0">Sentiment Visualization</h5>
+              <div class="d-flex align-items-center gap-2">
+                <label for="vizSelect" class="form-label mb-0 small">Visualization:</label>
+                <select id="vizSelect" class="form-select form-select-sm">
+                  <option value="pie" selected>Pie</option>
+                  <option value="bar">Bar</option>
+                  <option value="table">Table</option>
+                  <option value="bell">Bell Curve</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="chartContainer" style="display: none;">
+              <canvas id="vibeChart"></canvas>
+            </div>
+
+            <div id="bellCurveContainer" style="display: none;">
+              <canvas id="bellCurveChart"></canvas>
+            </div>
+
+            <div id="gridContainer" class="row g-3" style="display: none;"></div>
+
+            <div id="tableContainer" style="display: none;">
+              <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Count</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
     </div>
 
-    <!-- Results Section -->
-    <div id="results" class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title">Vibe Score</h5>
-        <p class="lead" id="scoreText"></p>
-      </div>
-    </div>
-
-    <!-- Chart Section -->
-    <div id="chartContainer" class="card">
-      <div class="card-body">
-        <h5 class="card-title">Sentiment Breakdown</h5>
-        <canvas id="vibeChart"></canvas>
-      </div>
-    </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Source Table Collapse Toggle Handler -->
+  <script>
+    // Update badge text when source table is expanded/collapsed
+    const sourceTableCollapse = document.getElementById('sourceTableCollapse');
+    const sourceTableBadge = document.getElementById('sourceTableBadge');
+    
+    if (sourceTableCollapse && sourceTableBadge) {
+      sourceTableCollapse.addEventListener('show.bs.collapse', function () {
+        sourceTableBadge.textContent = 'Click to collapse ▲';
+        console.log('📊 Source table expanded');
+      });
+      
+      sourceTableCollapse.addEventListener('hide.bs.collapse', function () {
+        sourceTableBadge.textContent = 'Click to expand ▼';
+        console.log('📊 Source table collapsed');
+      });
+    }
+  </script>
 </body>
 </html>

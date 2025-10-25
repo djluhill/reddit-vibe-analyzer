@@ -1,6 +1,7 @@
 {
   "name": "redvibeanalyzer",
   "version": "1.0.0",
+  "type": "module",
   "description": "A Reddit vibe sentiment analyzer app using Node.js, Express, and Chart.js",
   "main": "server.js",
   "scripts": {

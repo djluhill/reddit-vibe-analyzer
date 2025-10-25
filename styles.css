@@ -1,0 +1,313 @@
+/* ============================================
+   SECTION 1: CSS VARIABLES (THEME SYSTEM)
+   ============================================ */
+
+/* Light mode (default) */
+:root {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --border-color: #dee2e6;
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --navbar-bg: #212529;
+  --navbar-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #ced4da;
+  --canvas-border: #333333;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #444444;
+  --card-bg: #2d2d2d;
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --navbar-bg: #0d0d0d;
+  --navbar-text: #e0e0e0;
+  --input-bg: #1a1a1a;
+  --input-border: #555555;
+  --canvas-border: #666666;
+}
+
+/* ============================================
+   SECTION 2: GLOBAL STYLES
+   ============================================ */
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px var(--card-shadow);
+  transition: all 0.3s ease;
+}
+
+.navbar {
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text);
+}
+
+.text-muted {
+  color: var(--text-secondary) !important;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: #80bdff;
+}
+
+.table {
+  color: var(--text-primary);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-bg-type: var(--bg-secondary);
+}
+
+/* ============================================
+   SECTION 3: GAME STYLES
+   ============================================ */
+
+/* ----------------------------------------
+   3.1: Canvas and Container
+   ---------------------------------------- */
+
+#gameCanvas {
+  border: 2px solid var(--canvas-border);
+  max-width: 100%;
+  height: auto;
+  background: #000000;
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#gameSection {
+  transition: opacity 0.3s ease;
+}
+
+/* ----------------------------------------
+   3.2: HUD and Stats
+   ---------------------------------------- */
+
+#gameStats .badge {
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+}
+
+#gameHUD {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+#weaponStatus {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.7rem;
+  transition: all 0.3s ease;
+}
+
+#powerupProgress {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#comboDisplay {
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ----------------------------------------
+   3.3: Touch Controls (Mobile)
+   ---------------------------------------- */
+
+#touchControls {
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+#touchControls button {
+  width: 80px;
+  height: 80px;
+  font-size: 2rem;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#touchControls button:active {
+  transform: scale(0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#touchControls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Specific button styling */
+#moveLeftBtn,
+#moveRightBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+#shootBtn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* ----------------------------------------
+   3.4: Keyboard Instructions
+   ---------------------------------------- */
+
+#keyboardInstructions {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ----------------------------------------
+   3.5: Difficulty Selector
+   ---------------------------------------- */
+
+.btn-group .btn-check:checked + .btn-outline-success {
+  background-color: #198754;
+  color: white;
+}
+
+.btn-group .btn-check:checked + .btn-outline-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btn-group .btn-check:checked + .btn-outline-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* ============================================
+   SECTION 4: THEME TOGGLE BUTTON
+   ============================================ */
+
+#themeToggle {
+  font-size: 1.2rem;
+  padding: 0.4rem 0.8rem;
+  transition: all 0.3s ease;
+}
+
+#themeToggle:hover {
+  transform: scale(1.1);
+}
+
+#themeIcon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+/* ============================================
+   SECTION 5: RESPONSIVE DESIGN
+   ============================================ */
+
+/* ----------------------------------------
+   5.1: Tablet and smaller
+   ---------------------------------------- */
+@media (max-width: 768px) {
+  #gameCanvas {
+    width: 100%;
+    height: auto;
+  }
+  
+  #touchControls button {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+  }
+  
+  #gameStats .badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+/* ----------------------------------------
+   5.2: Mobile (small screens)
+   ---------------------------------------- */
+@media (max-width: 576px) {
+  #touchControls {
+    gap: 0.5rem;
+  }
+  
+  #touchControls button {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  #gameStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  
+  #gameStats .badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* ============================================
+   SECTION 6: UTILITY CLASSES
+   ============================================ */
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
