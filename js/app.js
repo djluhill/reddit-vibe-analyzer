@@ -239,101 +239,178 @@ function updateGameSubredditDisplay() {
 }
 
 // ----------------------------------------
+// 5.4: HTML Escape Helper
+// ----------------------------------------
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// ----------------------------------------
 // 5.5: Build Source Table (NEW - Citation tracking)
 // ----------------------------------------
 function buildSourceTable(segments) {
-  console.log(`${GAME_LOG_PREFIX} 📊 Building source table with ${segments.length} comments...`);
+  console.log(`${GAME_LOG_PREFIX} 📊 Building source table from ${segments.length} segments...`);
   
+  if (!segments || segments.length === 0) {
+    console.warn(`${GAME_LOG_PREFIX} ⚠️ No segments to build table from`);
+    return;
+  }
+  
+  // Group segments by citationNumber (source post)
+  const sourceMap = new Map();
+  
+  segments.forEach(segment => {
+    const citNum = segment.citationNumber || 'Unknown';
+    
+    if (!sourceMap.has(citNum)) {
+      sourceMap.set(citNum, {
+        citationNumber: citNum,
+        postTitle: segment.postTitle || segment.text || 'Untitled',
+        subreddit: segment.subreddit || 'Unknown',
+        permalink: segment.permalink,
+        postUrl: segment.postUrl,
+        segments: [],
+        negCount: 0,
+        posCount: 0,
+        neuCount: 0
+      });
+    }
+    
+    const source = sourceMap.get(citNum);
+    source.segments.push(segment);
+    
+    // Count sentiment types
+    if (segment.sentiment === 'negative') source.negCount++;
+    else if (segment.sentiment === 'positive') source.posCount++;
+    else source.neuCount++;
+  });
+  
+  // Convert map to array and sort by citation number
+  const sources = Array.from(sourceMap.values()).sort((a, b) => {
+    const aNum = typeof a.citationNumber === 'number' ? a.citationNumber : 999;
+    const bNum = typeof b.citationNumber === 'number' ? b.citationNumber : 999;
+    return aNum - bNum;
+  });
+  
+  console.log(`${GAME_LOG_PREFIX} 📊 Grouped into ${sources.length} unique sources`);
+  sources.forEach((source, i) => {
+    if (i < 3) { // Log first 3
+      console.log(`${GAME_LOG_PREFIX}   [${source.citationNumber}] ${source.segments.length} segments: ${source.negCount} neg, ${source.posCount} pos, ${source.neuCount} neu`);
+    }
+  });
+  
+  // Get existing HTML elements
   const tableBody = document.getElementById('sourceTableBody');
+  const tableSection = document.getElementById('sourceTableSection');
+  const tableCount = document.getElementById('sourceTableCount');
+  
   if (!tableBody) {
-    console.warn(`${GAME_LOG_PREFIX} ⚠️ Source table body element not found`);
+    console.warn(`${GAME_LOG_PREFIX} ⚠️ #sourceTableBody element not found`);
     return;
   }
   
   // Clear existing rows
   tableBody.innerHTML = '';
   
-  // Count comments per source
-  const sourceCount = {};
-  segments.forEach(seg => {
-    const key = seg.postUrl || seg.subreddit;
-    sourceCount[key] = (sourceCount[key] || 0) + 1;
-  });
-  
-  console.log(`${GAME_LOG_PREFIX} 📈 Source distribution:`, sourceCount);
-  
-  // Build table rows
-  segments.forEach((seg, index) => {
+  // Build table rows - grouped by source
+  sources.forEach(source => {
     const row = document.createElement('tr');
     
     // Citation number
     const citationCell = document.createElement('td');
-    citationCell.textContent = `[${seg.citationNumber}]`;
+    citationCell.innerHTML = `<strong>[${source.citationNumber}]</strong>`;
     citationCell.className = 'text-center';
-    citationCell.style.fontWeight = 'bold';
     row.appendChild(citationCell);
     
-    // Comment preview (first 40 chars)
-    const commentCell = document.createElement('td');
-    const preview = seg.text.length > 40 ? seg.text.substring(0, 40) + '...' : seg.text;
-    commentCell.textContent = preview;
-    commentCell.title = seg.text; // Full text on hover
-    row.appendChild(commentCell);
+    // Source post title + comment count
+    const titleCell = document.createElement('td');
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'text-truncate';
+    titleDiv.style.maxWidth = '400px';
+    titleDiv.title = escapeHtml(source.postTitle);
+    titleDiv.textContent = source.postTitle.substring(0, 80) + (source.postTitle.length > 80 ? '...' : '');
     
-    // Sentiment
+    const countSmall = document.createElement('small');
+    countSmall.className = 'text-muted d-block';
+    countSmall.textContent = `${source.segments.length} enemy comment${source.segments.length !== 1 ? 's' : ''} from this source`;
+    
+    titleCell.appendChild(titleDiv);
+    titleCell.appendChild(countSmall);
+    row.appendChild(titleCell);
+    
+    // Sentiment distribution
     const sentimentCell = document.createElement('td');
-    const sentimentBadge = document.createElement('span');
-    sentimentBadge.className = 'badge';
+    const sentimentDiv = document.createElement('div');
+    sentimentDiv.className = 'd-flex gap-1 flex-wrap';
     
-    if (seg.sentiment === 'negative') {
-      sentimentBadge.style.backgroundColor = '#dc3545';
-      sentimentBadge.textContent = '💀 Neg';
-    } else if (seg.sentiment === 'positive') {
-      sentimentBadge.style.backgroundColor = '#28a745';
-      sentimentBadge.textContent = '💚 Pos';
-    } else {
-      sentimentBadge.style.backgroundColor = '#6c757d';
-      sentimentBadge.textContent = '😐 Neu';
+    if (source.negCount > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-danger';
+      badge.textContent = `${source.negCount} 💀`;
+      sentimentDiv.appendChild(badge);
     }
-    sentimentBadge.style.color = 'white';
-    sentimentCell.appendChild(sentimentBadge);
+    if (source.posCount > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-success';
+      badge.textContent = `${source.posCount} 💚`;
+      sentimentDiv.appendChild(badge);
+    }
+    if (source.neuCount > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-secondary';
+      badge.textContent = `${source.neuCount} 😐`;
+      sentimentDiv.appendChild(badge);
+    }
+    
+    sentimentCell.appendChild(sentimentDiv);
     row.appendChild(sentimentCell);
     
     // Subreddit
     const subredditCell = document.createElement('td');
-    subredditCell.textContent = `r/${seg.subreddit}`;
+    const subredditBadge = document.createElement('span');
+    subredditBadge.className = 'badge bg-info';
+    subredditBadge.textContent = `r/${source.subreddit}`;
+    subredditCell.appendChild(subredditBadge);
     row.appendChild(subredditCell);
     
-    // Post link
+    // View Thread link
     const linkCell = document.createElement('td');
-    if (seg.postUrl) {
+    if (source.postUrl) {
       const link = document.createElement('a');
-      link.href = seg.postUrl;
+      link.href = source.postUrl;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.textContent = '🔗 View Thread';
       link.className = 'btn btn-sm btn-outline-primary';
+      link.textContent = '🔗 View Thread';
       linkCell.appendChild(link);
     } else {
-      linkCell.textContent = 'N/A';
+      const noLink = document.createElement('span');
+      noLink.className = 'text-muted small';
+      noLink.textContent = 'No link';
+      linkCell.appendChild(noLink);
     }
     row.appendChild(linkCell);
     
     tableBody.appendChild(row);
   });
   
-  // Update table header count
-  const tableCount = document.getElementById('sourceTableCount');
+  // Update count
   if (tableCount) {
-    tableCount.textContent = segments.length;
+    tableCount.textContent = sources.length;
   }
   
-  // Show the table section
-  const tableSection = document.getElementById('sourceTableSection');
+  // Show the section
   if (tableSection) {
     tableSection.style.display = 'block';
-    console.log(`${GAME_LOG_PREFIX} ✅ Source table built with ${segments.length} rows`);
   }
+  
+  console.log(`${GAME_LOG_PREFIX} ✅ Source table built with ${sources.length} sources (${segments.length} total comments)`);
 }
 
 // ============================================
@@ -359,7 +436,7 @@ function prepareCommentsForGame() {
       
       console.log(`${GAME_LOG_PREFIX} 🌊 Wave ${waveIndex + 1}: r/${subreddit} - ${segments.length} comments`);
       
-      // Convert segments to game format
+      // Convert segments to game format - PRESERVE ALL METADATA
       const comments = segments.map((item, index) => {
         let text, score, sentiment;
         
@@ -367,13 +444,25 @@ function prepareCommentsForGame() {
           text = item.text || `Comment ${index + 1}`;
           score = item.score || 0;
           sentiment = item.sentiment || (score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral');
+          
+          // ✅ FIX #4: PRESERVE CITATION METADATA
+          return { 
+            text, 
+            sentiment, 
+            score,
+            citationNumber: item.citationNumber,
+            subreddit: item.subreddit || subreddit,
+            permalink: item.permalink,
+            postUrl: item.postUrl,
+            postTitle: item.postTitle
+          };
         } else {
           score = typeof item === 'number' ? item : 0;
           text = `Comment ${index + 1}`;
           sentiment = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+          
+          return { text, sentiment, score };
         }
-        
-        return { text, sentiment, score };
       });
       
       return {
@@ -414,13 +503,31 @@ function prepareCommentsForGame() {
       text = item.text || `Comment ${index + 1}`;
       score = item.score || 0;
       sentiment = item.sentiment || (score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral');
+      
+      // ✅ CRITICAL FIX #3: Preserve ALL metadata from the segment object
+      if (index < 3) {
+        console.log(`${GAME_LOG_PREFIX} 🔍 Comment ${index}: citationNumber=${item.citationNumber}, subreddit=${item.subreddit}`);
+      }
+      
+      return { 
+        text, 
+        sentiment, 
+        score,
+        // ✅ PRESERVE CITATION METADATA
+        citationNumber: item.citationNumber,
+        subreddit: item.subreddit || currentGameSubreddit,
+        permalink: item.permalink,
+        postUrl: item.postUrl,
+        postTitle: item.postTitle
+      };
     } else {
+      // Fallback for non-object items
       score = typeof item === 'number' ? item : 0;
       text = `Comment ${index + 1}`;
       sentiment = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+      
+      return { text, sentiment, score };
     }
-    
-    return { text, sentiment, score };
   });
   
   const negCount = comments.filter(c => c.sentiment === 'negative').length;
@@ -636,7 +743,7 @@ gameAnalyzeBtn?.addEventListener('click', () => {
   
   console.log(`${GAME_LOG_PREFIX} 📝 Processing ${segs.length} manual text segments...`);
   
-  // Add citation metadata to manual text
+  // ✅ FIX: Add citation metadata to manual text BEFORE scoring
   const segmentsWithMetadata = segs.map((seg, index) => ({
     text: seg,
     citationNumber: index + 1,
@@ -646,13 +753,8 @@ gameAnalyzeBtn?.addEventListener('click', () => {
     postUrl: null
   }));
   
-  const scored = scoreSegments(segs.length ? segs : [text]);
-  
-  // Merge metadata
-  const scoredWithMetadata = scored.map((scoreObj, index) => ({
-    ...scoreObj,
-    ...segmentsWithMetadata[index]
-  }));
+  // ✅ FIX: Pass full objects to scoreSegments (preserves metadata)
+  const scoredWithMetadata = scoreSegments(segmentsWithMetadata);
   
   console.log(`${GAME_LOG_PREFIX} ✅ Created ${scoredWithMetadata.length} segments with citations`);
   
@@ -754,35 +856,42 @@ gameFetchBtn?.addEventListener('click', async () => {
 
     console.log(`${GAME_LOG_PREFIX} ✅ Created ${segmentsWithMetadata.length} segments with citation metadata`);
 
-    // Extract just text for scoring
-    const segments = segmentsWithMetadata.map(s => s.text).filter(Boolean);
-    
-    console.log(`${GAME_LOG_PREFIX} 📊 Scoring ${segments.length} text segments...`);
-    const scored = scoreSegments(segments);
-    
-    // 🔗 MERGE: Add metadata back to scored segments
-    const scoredWithMetadata = scored.map((scoreObj, index) => {
-      const metadata = segmentsWithMetadata[index];
-      return {
-        ...scoreObj,
-        citationNumber: metadata.citationNumber,
-        subreddit: metadata.subreddit,
-        permalink: metadata.permalink,
-        postTitle: metadata.postTitle,
-        postUrl: metadata.postUrl
-      };
+    // ✅ FIX #1: Pass FULL objects to scoreSegments (it preserves metadata via ...metadata)
+    console.log(`${GAME_LOG_PREFIX} 📊 Scoring ${segmentsWithMetadata.length} segments WITH metadata...`);
+    console.log(`${GAME_LOG_PREFIX} 🔍 First segment before scoring:`, {
+      hasText: !!segmentsWithMetadata[0]?.text,
+      hasCitationNumber: segmentsWithMetadata[0]?.citationNumber !== undefined,
+      citationValue: segmentsWithMetadata[0]?.citationNumber,
+      hasSubreddit: !!segmentsWithMetadata[0]?.subreddit
     });
-    
-    console.log(`${GAME_LOG_PREFIX} ✅ Merged metadata with sentiment scores`);
+
+    const scoredWithMetadata = scoreSegments(segmentsWithMetadata);
+
+    console.log(`${GAME_LOG_PREFIX} ✅ Scored with metadata preserved`);
+    console.log(`${GAME_LOG_PREFIX} 🔍 First segment after scoring:`, {
+      hasText: !!scoredWithMetadata[0]?.text,
+      hasCitationNumber: scoredWithMetadata[0]?.citationNumber !== undefined,
+      citationValue: scoredWithMetadata[0]?.citationNumber,
+      hasSubreddit: !!scoredWithMetadata[0]?.subreddit,
+      hasSentiment: !!scoredWithMetadata[0]?.sentiment
+    });
     console.log(`${GAME_LOG_PREFIX} 📋 Sample citation: #${scoredWithMetadata[0]?.citationNumber} - ${scoredWithMetadata[0]?.sentiment} - "${scoredWithMetadata[0]?.text?.substring(0, 30)}..."`);
 
-    const result = analyze(segments.join(' '));
+    const result = analyze(segmentsWithMetadata.map(s => s.text).join(' '));
 
     setAnalysis({ 
       result, 
       segments: scoredWithMetadata, // Now includes citation metadata!
       series: [{ label: sub, segments: scoredWithMetadata, result }]
     });
+    
+    // ✅ VERIFICATION: Check data is in state
+    console.log(`${GAME_LOG_PREFIX} 🔍 Verifying data in state...`);
+    console.log(`${GAME_LOG_PREFIX} lastScores length: ${lastScores?.length || 0}`);
+    if (lastScores && lastScores.length > 0) {
+      console.log(`${GAME_LOG_PREFIX} lastScores[0] has citationNumber: ${lastScores[0]?.citationNumber !== undefined ? '✅ YES' : '❌ NO'}`);
+      console.log(`${GAME_LOG_PREFIX} lastScores[0]:`, lastScores[0]);
+    }
     
     // 📊 BUILD SOURCE TABLE
     buildSourceTable(scoredWithMetadata);
@@ -981,4 +1090,52 @@ sortSelect?.addEventListener('change', () => {
 gameSortSelect?.addEventListener('change', () => {
   if (!gameTopTimeCol) return;
   gameTopTimeCol.style.display = (gameSortSelect.value === 'top') ? '' : 'none';
+});
+// ============================================
+// SECTION 9: GLOBAL EXPORTS FOR ONBOARDING
+// ============================================
+
+/**
+ * Switch to the Game tab programmatically
+ * Used by onboarding.js for Quick Demo
+ */
+window.switchToGameTab = function() {
+  const gameTabLink = document.querySelector('a[href="#game"]');
+  if (gameTabLink) {
+    // Trigger Bootstrap tab
+    const tab = new bootstrap.Tab(gameTabLink);
+    tab.show();
+    console.log(`${GAME_LOG_PREFIX} ✅ Switched to Game tab (via global function)`);
+  } else {
+    console.error(`${GAME_LOG_PREFIX} ❌ Game tab link not found`);
+  }
+};
+
+/**
+ * Start the game programmatically
+ * Used by onboarding.js after Quick Demo loads
+ */
+window.startGameFromOnboarding = function() {
+  console.log(`${GAME_LOG_PREFIX} 🎮 startGameFromOnboarding called`);
+  
+  // Call the existing startGame function
+  if (typeof startGame === 'function') {
+    startGame();
+  } else {
+    console.error(`${GAME_LOG_PREFIX} ❌ startGame function not found`);
+  }
+};
+
+/**
+ * Check if game is ready to be played
+ * Used by onboarding.js to know when to auto-start
+ */
+window.isGameReady = function() {
+  return gameReady;
+};
+
+console.log(`${GAME_LOG_PREFIX} ✅ Global functions exported for onboarding:`, {
+  switchToGameTab: typeof window.switchToGameTab,
+  startGameFromOnboarding: typeof window.startGameFromOnboarding,
+  isGameReady: typeof window.isGameReady
 });

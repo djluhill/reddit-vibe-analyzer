@@ -311,3 +311,42 @@ body {
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
+/* ============================================
+   SECTION 7: ONBOARDING MODAL THEME SUPPORT
+   ============================================ */
+
+/* Make onboarding modal respect theme */
+[data-theme="dark"] #onboardingModal .modal-content {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #onboardingModal .modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] #onboardingModal .btn-close {
+  filter: invert(1);
+}
+
+[data-theme="dark"] #onboardingModal .alert-info {
+  background-color: rgba(13, 202, 240, 0.15);
+  border-left-color: #0dcaf0;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #onboardingModal .border {
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] #onboardingModal .form-check {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure onboarding works on mobile */
+@media (max-width: 768px) {
+  #onboardingModal .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+}
